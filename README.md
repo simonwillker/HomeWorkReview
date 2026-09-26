@@ -19,7 +19,10 @@ npm run preview    # 预览生产构建
 推送到 `main` 后，GitHub Actions（`.github/workflows/deploy.yml`）会运行测试、构建并发布到 GitHub Pages：
 https://simonwillker.github.io/HomeWorkReview/
 
-首次使用前需在仓库 Settings → Pages → Build and deployment 中把 Source 设为 **GitHub Actions**。
+工作流带 `enablement: true`，会自己创建 Pages 站点，**不需要手动去 Settings → Pages 设置 Source**。
+
+但 **仓库必须是 public**：GitHub Pages 对 private 仓库要求 GitHub Pro 以上的付费计划，
+否则这一步会以 `Get Pages site failed ... Not Found` 失败。
 
 应用是手机优先的 PWA（iPhone / Android 浏览器“添加到主屏幕”即可像 App 一样使用，平板自适应）。数据保存在本机：业务数据在 localStorage，照片在 IndexedDB，离线可用。
 

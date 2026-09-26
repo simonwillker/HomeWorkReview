@@ -26,7 +26,12 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      # enablement: true にすると、Pages サイトが未作成でも Actions が作る。
+      # これが無いと Settings → Pages で Source を手で「GitHub Actions」に
+      # しない限り Get Pages site failed（404）で止まる。
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
