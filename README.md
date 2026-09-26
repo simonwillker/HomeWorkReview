@@ -14,6 +14,13 @@ npm run build      # 类型检查 + 生产构建到 dist/
 npm run preview    # 预览生产构建
 ```
 
+## 部署
+
+推送到 `main` 后，GitHub Actions（`.github/workflows/deploy.yml`）会运行测试、构建并发布到 GitHub Pages：
+https://simonwillker.github.io/HomeWorkReview/
+
+首次使用前需在仓库 Settings → Pages → Build and deployment 中把 Source 设为 **GitHub Actions**。
+
 应用是手机优先的 PWA（iPhone / Android 浏览器“添加到主屏幕”即可像 App 一样使用，平板自适应）。数据保存在本机：业务数据在 localStorage，照片在 IndexedDB，离线可用。
 
 ## 已实现（对应设计书）
