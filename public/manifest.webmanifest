@@ -1,0 +1,12 @@
+{
+  "name": "作业检查与复习",
+  "short_name": "作业复习",
+  "lang": "zh-CN",
+  "start_url": "./#/today",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f7fb",
+  "theme_color": "#2f6fd6",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
