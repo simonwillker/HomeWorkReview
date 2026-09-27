@@ -983,3 +983,106 @@ code {
     padding-top: 12px;
   }
 }
+
+/* ---------- 日记检查 ---------- */
+.diary-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+.diary-score {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 6px;
+}
+.diary-text {
+  width: 100%;
+  line-height: 1.8;
+}
+.badge.sev-fix,
+.finding.sev-fix {
+  --sev: var(--bad);
+  --sev-soft: var(--bad-soft);
+}
+.badge.sev-check,
+.finding.sev-check {
+  --sev: var(--warn);
+  --sev-soft: var(--warn-soft);
+}
+.badge.sev-idea,
+.finding.sev-idea {
+  --sev: var(--primary);
+  --sev-soft: var(--primary-soft);
+}
+.badge.sev-good,
+.finding.sev-good {
+  --sev: var(--ok);
+  --sev-soft: var(--ok-soft);
+}
+.badge.sev-fix,
+.badge.sev-check,
+.badge.sev-idea,
+.badge.sev-good {
+  background: var(--sev-soft);
+  color: var(--sev);
+}
+.finding {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--sev);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 10px 0;
+}
+.finding-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.finding-head strong {
+  font-size: 1.02rem;
+}
+.finding-quote {
+  margin: 8px 0 0;
+  word-break: break-word;
+}
+.finding-quote mark {
+  background: var(--sev-soft);
+  color: var(--text);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.finding-detail {
+  margin: 8px 0 0;
+  line-height: 1.75;
+}
+.finding-zh {
+  margin: 6px 0 0;
+}
+.finding .btn {
+  margin-top: 10px;
+}
+.tip-list {
+  margin: 8px 0 0;
+  padding-left: 1.2em;
+  line-height: 1.8;
+}
+.tip-list li + li {
+  margin-top: 6px;
+}
+.grade-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.grade-pick select {
+  width: auto;
+  padding: 4px 8px;
+}

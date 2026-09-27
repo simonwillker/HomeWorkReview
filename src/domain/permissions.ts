@@ -18,6 +18,8 @@ export type Action =
   | 'assignment.confirm'
   | 'assignment.return'
   | 'card.review'
+  | 'diary.write'
+  | 'student.profile'
   | 'family.manage'
   | 'family.settings'
   | 'data.export'

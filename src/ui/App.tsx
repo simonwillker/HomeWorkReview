@@ -3,6 +3,8 @@ import { AssignmentPage } from './pages/Assignment';
 import { NewAssignmentPage } from './pages/NewAssignment';
 import { ConfirmPage } from './pages/Confirm';
 import { CheckPage } from './pages/Check';
+import { DiaryListPage, NewDiaryPage } from './pages/Diary';
+import { DiaryPage } from './pages/DiaryCheck';
 import { MePage } from './pages/Me';
 import { NewCardPage, ReviewPage } from './pages/Review';
 import { RecordsPage } from './pages/Records';
@@ -35,6 +37,11 @@ export function App() {
       else if (sub === 'confirm') content = <ConfirmPage id={id} />;
       else content = <AssignmentPage id={id} />;
       break;
+    case 'diary':
+      if (!id) content = <DiaryListPage />;
+      else if (id === 'new') content = <NewDiaryPage />;
+      else content = <DiaryPage id={id} />;
+      break;
     case 'review':
       content = id === 'new' ? <NewCardPage /> : <ReviewPage />;
       break;
@@ -47,7 +54,7 @@ export function App() {
     default:
       content = <TodayPage />;
   }
-  const active = page === 'a' || page === 'new' ? 'today' : page;
+  const active = page === 'a' || page === 'new' || page === 'diary' ? 'today' : page;
 
   return (
     <div className="app">

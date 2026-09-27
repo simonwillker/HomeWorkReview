@@ -2,6 +2,7 @@
 // 服务直接修改传入的 db；调用方（store）会先复制一份，操作成功后再提交，失败则丢弃，保证原子性。
 
 import { compareAnswers } from './answers';
+import type { SchoolGrade } from './diary/kanjiGrades';
 import { addDays, isValidDateStr, toDateStr } from './dates';
 import { assertCan, canSeeAssignment, PermissionError } from './permissions';
 import { applyCardAnswer, firstDueDate, validateIntervals, type CardAnswer } from './revision';
@@ -14,6 +15,8 @@ import {
   type ConfirmationScope,
   type Correction,
   type Db,
+  type DiaryCheckSummary,
+  type DiaryEntry,
   type Family,
   type FamilySettings,
   type PhotoClarity,
@@ -95,6 +98,14 @@ export interface CorrectionInput {
   addToReview: boolean;
   knowledgePoint?: string;
   correctApproach?: string;
+}
+
+export interface NewDiaryInput {
+  studentId: string;
+  date: string;
+  title?: string;
+  photoIds: string[];
+  text: string;
 }
 
 export interface ManualCardInput {
@@ -684,6 +695,101 @@ export class HomeworkService {
     this.log(actor, 'card.delete', 'card', cardId);
   }
 
+  // ---------- 日记检查 ----------
+  //
+  // 日记本身写在纸上，照片只是凭据；检查是对「照片上的文字」做的。
+  // 原稿（text）保存后不再改动，修改稿（revised）可以一直编辑和保存，方便前后对照。
+
+  /** 学生的年级。没设置时按 6 年级算（最宽松，不会把学过的字说成没学过） */
+  gradeOf(studentId: string): SchoolGrade {
+    return this.db.users.find((u) => u.id === studentId)?.grade ?? 6;
+  }
+
+  setStudentGrade(actor: User, studentId: string, grade: SchoolGrade) {
+    const student = this.student(actor, studentId);
+    assertCan(actor, 'student.profile', student.id, student);
+    if (![1, 2, 3, 4, 5, 6].includes(grade)) throw new ValidationError('年级只能是 1 到 6');
+    student.grade = grade;
+    this.log(actor, 'student.set_grade', 'user', student.id, String(grade));
+  }
+
+  diariesFor(actor: User, studentId?: string): DiaryEntry[] {
+    return this.db.diaries
+      .filter((d) => d.familyId === actor.familyId)
+      .filter((d) => (studentId ? d.studentId === studentId : true))
+      .filter((d) => actor.role === 'parent' || d.studentId === actor.id)
+      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+  }
+
+  diary(actor: User, id: string): DiaryEntry {
+    const d = this.db.diaries.find((x) => x.id === id);
+    if (!d || d.familyId !== actor.familyId) throw new ValidationError('找不到该日记');
+    if (actor.role === 'student' && d.studentId !== actor.id) throw new ValidationError('找不到该日记');
+    return d;
+  }
+
+  createDiary(actor: User, input: NewDiaryInput): DiaryEntry {
+    const student = this.student(actor, input.studentId);
+    assertCan(actor, 'diary.write', student.id, student);
+    if (!isValidDateStr(input.date)) throw new ValidationError('日期格式不正确');
+    const text = requireText(input.text, '日记的文字', 4000);
+    const now = this.nowIso();
+    const entry: DiaryEntry = {
+      id: this.deps.newId(),
+      familyId: actor.familyId,
+      studentId: student.id,
+      date: input.date,
+      title: input.title?.trim() || undefined,
+      photoIds: [...input.photoIds],
+      text,
+      revised: text,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.db.diaries.push(entry);
+    this.log(actor, 'diary.create', 'diary', entry.id, `${input.photoIds.length} 张照片`);
+    return entry;
+  }
+
+  /** 改原稿（照片认错字、重新誊写时用）。修改稿没动过时跟着一起更新 */
+  updateDiaryText(actor: User, id: string, text: string) {
+    const d = this.diary(actor, id);
+    assertCan(actor, 'diary.write', d.studentId, this.user(d.studentId));
+    const next = requireText(text, '日记的文字', 4000);
+    const untouched = d.revised === d.text;
+    d.text = next;
+    if (untouched) d.revised = next;
+    d.updatedAt = this.nowIso();
+    this.log(actor, 'diary.update_text', 'diary', d.id);
+  }
+
+  addDiaryPhotos(actor: User, id: string, photoIds: string[]) {
+    const d = this.diary(actor, id);
+    assertCan(actor, 'diary.write', d.studentId, this.user(d.studentId));
+    d.photoIds = [...photoIds];
+    d.updatedAt = this.nowIso();
+    this.log(actor, 'diary.update_photos', 'diary', d.id, String(photoIds.length));
+  }
+
+  /** 保存修改稿（可以反复保存）。检查结果只存一个摘要，详细指摘随时可以重新算 */
+  saveDiaryRevision(actor: User, id: string, revised: string, check?: DiaryCheckSummary) {
+    const d = this.diary(actor, id);
+    assertCan(actor, 'diary.write', d.studentId, this.user(d.studentId));
+    d.revised = requireText(revised, '修改稿', 4000);
+    if (check) d.lastCheck = check;
+    d.updatedAt = this.nowIso();
+    this.log(actor, 'diary.save_revision', 'diary', d.id);
+  }
+
+  /** 删除日记，返回需要一并删除的照片 id */
+  deleteDiary(actor: User, id: string): string[] {
+    const d = this.diary(actor, id);
+    assertCan(actor, 'diary.write', d.studentId, this.user(d.studentId));
+    this.db.diaries = this.db.diaries.filter((x) => x.id !== id);
+    this.log(actor, 'diary.delete', 'diary', id);
+    return [...d.photoIds];
+  }
+
   // ---------- 数据管理 ----------
 
   exportStudentData(actor: User, studentId: string) {
@@ -701,6 +807,7 @@ export class HomeworkService {
       corrections: this.db.corrections.filter((c) => ids.has(c.assignmentId)),
       confirmations: this.db.confirmations.filter((c) => ids.has(c.assignmentId)),
       cards: this.db.cards.filter((c) => c.studentId === student.id),
+      diaries: this.db.diaries.filter((d) => d.studentId === student.id),
     };
   }
 
@@ -710,6 +817,8 @@ export class HomeworkService {
     assertCan(actor, 'data.delete', student.id, student);
     const ids = this.db.assignments.filter((a) => a.studentId === student.id).map((a) => a.id);
     const photoIds = this.purgeAssignments(ids);
+    for (const d of this.db.diaries) if (d.studentId === student.id) photoIds.push(...d.photoIds);
+    this.db.diaries = this.db.diaries.filter((d) => d.studentId !== student.id);
     this.db.cards = this.db.cards.filter((c) => c.studentId !== student.id);
     this.db.users = this.db.users.filter((u) => u.id !== student.id);
     this.log(actor, 'data.delete_student', 'user', student.id, student.displayName);

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { cleanupPhotos, useStore } from '../../data/store';
 import { getPhoto } from '../../data/photos';
 import type { HomeworkService } from '../../domain/service';
+import { GRADES, type SchoolGrade } from '../../domain/diary';
 import { formatTime, Header, Modal, useToast } from '../components';
 
 async function blobToDataUrl(b: Blob): Promise<string> {
@@ -37,6 +38,7 @@ export function MePage() {
     const photoIds = [
       ...data!.assignments.flatMap((a) => (a.noticePhotoId ? [a.noticePhotoId] : [])),
       ...data!.submissions.flatMap((x) => x.photoIds),
+      ...data!.diaries.flatMap((d) => d.photoIds),
     ];
     const photos: Record<string, string> = {};
     for (const pid of photoIds) {
@@ -82,6 +84,27 @@ export function MePage() {
           {kids.map((k) => (
             <li key={k.id}>
               {k.displayName} <span className="badge">学生</span>
+              {(isParent || k.id === me.id) && (
+                <label className="grade-pick">
+                  年级
+                  <select
+                    aria-label={`${k.displayName} 的年级`}
+                    value={k.grade ?? 6}
+                    onChange={(e) =>
+                      toast.attempt(
+                        () => run((svc, u) => svc.setStudentGrade(u!, k.id, Number(e.target.value) as SchoolGrade)),
+                        '已保存',
+                      )
+                    }
+                  >
+                    {GRADES.map((g) => (
+                      <option key={g} value={g}>
+                        {g} 年级
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </li>
           ))}
         </ul>
@@ -122,6 +145,9 @@ export function MePage() {
             )}
           </>
         )}
+        <p className="muted small">
+          年级只用在「日记检查」里判断哪些汉字已经学过（学年別漢字配当表，1〜6 年共 1026 字）。
+        </p>
         <p className="muted small">孩子的照片和学习记录只在本家庭的授权成员之间可见。</p>
       </section>
 
