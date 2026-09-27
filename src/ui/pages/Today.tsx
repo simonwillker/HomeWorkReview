@@ -99,6 +99,7 @@ export function TodayPage() {
   const later = active.filter((a) => a.dueDate && a.dueDate > today);
   const doneToday = mine.filter((a) => a.status === 'confirmed' && toDateStr(new Date(a.updatedAt)) === today);
   const dueCards = db.cards.filter((c) => inScope(c.studentId) && isDue(c, today));
+  const diaries = db.diaries.filter((d) => inScope(d.studentId));
   const showStudent = me.role === 'parent' && child === 'all' && kids.length > 1;
 
   return (
@@ -156,6 +157,10 @@ export function TodayPage() {
         </section>
       )}
 
+      <a className="review-banner" href="#/diary">
+        <span>📔 日记检查</span>
+        <strong>{diaries.length > 0 ? `${diaries.length} 篇` : '拍照检查日记'}</strong>
+      </a>
       <a className="review-banner" href="#/review">
         <span>🔁 今日复习</span>
         <strong>{dueCards.length > 0 ? `${dueCards.length} 张卡片` : '没有待复习'}</strong>

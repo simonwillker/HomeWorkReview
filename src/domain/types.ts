@@ -1,5 +1,8 @@
 // 数据结构（对应设计书第 6 节）。日期统一使用本地日期字符串 YYYY-MM-DD，时间使用 ISO 字符串。
 
+import type { DiarySeverity } from './diary/types';
+import type { SchoolGrade } from './diary/kanjiGrades';
+
 export type Role = 'student' | 'parent';
 export type Locale = 'zh-CN' | 'ja';
 
@@ -11,6 +14,8 @@ export interface User {
   familyId: string;
   /** 家长切换身份时使用的 PIN（哈希），防止学生使用家长确认操作 */
   pinHash?: string;
+  /** 学生的年级（1〜6）。用于日记检查里「这个汉字学过了吗」的判断 */
+  grade?: SchoolGrade;
   createdAt: string;
 }
 
@@ -188,6 +193,32 @@ export interface RevisionCard {
   createdAt: string;
 }
 
+/** 日记检查的一次结果摘要（详细指摘不保存，随时可以重新检查） */
+export interface DiaryCheckSummary {
+  at: string;
+  counts: Record<DiarySeverity, number>;
+  /** 检查时用的年级 */
+  grade: SchoolGrade;
+}
+
+export interface DiaryEntry {
+  id: string;
+  familyId: string;
+  studentId: string;
+  /** 日记写的那天 */
+  date: string;
+  title?: string;
+  /** 日记原件的照片（保存在 IndexedDB，这里只放引用） */
+  photoIds: string[];
+  /** 照片上的文字（原稿）。照片是凭据，检查是对这段文字做的 */
+  text: string;
+  /** 修改稿。可以继续编辑并保存，原稿保持不动以便前后对照 */
+  revised: string;
+  lastCheck?: DiaryCheckSummary;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AuditEntry {
   id: string;
   at: string;
@@ -209,6 +240,7 @@ export interface Db {
   corrections: Correction[];
   confirmations: Confirmation[];
   cards: RevisionCard[];
+  diaries: DiaryEntry[];
   audit: AuditEntry[];
   session: { currentUserId?: string };
 }
@@ -233,6 +265,7 @@ export function emptyDb(): Db {
     corrections: [],
     confirmations: [],
     cards: [],
+    diaries: [],
     audit: [],
     session: {},
   };
